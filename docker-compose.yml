@@ -1,0 +1,84 @@
+services:
+  # ==========================================
+  # 1. Relational Database (PostgreSQL 16)
+  # ==========================================
+  db:
+    image: postgres:16-alpine
+    container_name: qr-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-qr_codes_db}
+    # ports:
+      # - "5432:5432" # For developmnet purposes
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Persistent named volume
+    healthcheck:
+      # Periodic database readiness check to gate backend startup
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-qr_codes_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - db-network
+
+  # ==========================================
+  # 2. Backend REST API (Python Flask)
+  # ==========================================
+  backend:
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: qr-backend
+    restart: unless-stopped
+    environment:
+      PORT: 5000
+      DEBUG: "false"
+      # Internal connection to database service using db-network
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-qr_codes_db}
+    # volumes:
+      # - ./src/backend:/app # Development mount
+    expose:
+      - "5000" # Internal port exposed across Docker networks
+    depends_on:
+      db:
+        condition: service_healthy # Backend waits until PostgreSQL passes healthcheck
+    networks:
+      # Backend bridges both networks: receives traffic from frontend and accesses db
+      - frontend-network
+      - db-network
+
+  # ==========================================
+  # 3. Frontend & API Gateway (Vue 3 + Nginx)
+  # ==========================================
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: qr-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80" # Single public host entry point: Host 8080 -> Nginx 80 (serves frontend and backend API)
+    depends_on:
+      - backend
+    networks:
+      - frontend-network
+
+# ==========================================
+# Persistent Storage Volumes
+# ==========================================
+volumes:
+  postgres_data:
+    name: qr_postgres_data
+
+# ==========================================
+# Bridge Networks
+# ==========================================
+networks:
+  frontend-network:
+    name: qr_frontend_network
+    driver: bridge
+  db-network:
+    name: qr_db_network
+    driver: bridge
