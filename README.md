@@ -5,9 +5,9 @@ Webová aplikace pro generování, správu a ukládání QR kódů do relační 
 ## Architektura a technologie
 
 Aplikace je třívrstvá a běží v Docker Compose:
-- **Frontend:** Vue 3 (Vite), obsluhovaný přes webový server Nginx.
-- **Backend:** REST API v Python Flask (Gunicorn WSGI, SQLAlchemy).
-- **Databáze:** PostgreSQL 16 (perzistentní volume `qr_postgres_data`).
+- **Frontend:** Vue 3 (Vite), obsluhovaný přes webový server Nginx (publikováno jako `davidstraka29/qr-frontend:latest`).
+- **Backend:** REST API v Python Flask (Gunicorn WSGI, SQLAlchemy) (publikováno jako `davidstraka29/qr-backend:latest`).
+- **Databáze:** PostgreSQL 16 (oficiální image `postgres:16-alpine`, perzistentní volume `qr_postgres_data`).
 
 **Síť a porty:**
 - Jediný veřejně dostupný port z hostitele je **`8080`** (`http://localhost:8080`), kde Nginx servíruje frontend a zároveň funguje jako reverzní proxy pro backendové API (`/api/*`).
@@ -15,21 +15,36 @@ Aplikace je třívrstvá a běží v Docker Compose:
 
 ## Spuštění aplikace
 
-Předpoklad: nainstalovaný a spuštěný Docker.
+Předpoklad: nainstalovaný a spuštěný Docker (např. Docker Desktop).
 
-1. **Spuštění:**
-   ```bash
-   docker compose up -d --build
-   ```
-2. **Přístup k aplikaci:**
-   - Webové rozhraní: [http://localhost:8080](http://localhost:8080)
-   - Kontrola stavu (Health Check): [http://localhost:8080/api/health](http://localhost:8080/api/health)
+V `docker-compose.yml` jsou definovány direktivy `image` i `build`, což umožňuje oba režimy spuštění:
 
-3. **Zastavení:**
-   ```bash
-   docker compose down
-   ```
-   *(Pro smazání uložených dat v databázi: `docker compose down -v`)*
+### 1. Běžné spuštění (využití lokálních nebo stažených images z Docker Hubu)
+```bash
+docker compose up -d
+```
+*Pokud images v počítači ještě nemáte a chcete je předem stáhnout z Docker Hubu:*
+```bash
+docker compose pull
+docker compose up -d
+```
+
+### 2. Vynucení nového lokálního sestavení ze zdrojových kódů
+Pokud provedete změny v kódu a chcete je ihned přeložit lokálně:
+```bash
+docker compose up -d --build
+```
+
+### 3. Zastavení aplikace
+```bash
+docker compose down
+```
+
+### Přístup k běžící aplikaci
+- Webové rozhraní: [http://localhost:8080](http://localhost:8080)
+- Kontrola stavu (Health Check): [http://localhost:8080/api/health](http://localhost:8080/api/health)
+
+---
 
 ## Struktura projektu
 

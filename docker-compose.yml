@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-qr_codes_db}
     # ports:
-      # - "5432:5432" # For developmnet purposes
+      # - "5432:5432" # For development purposes
     volumes:
       - postgres_data:/var/lib/postgresql/data # Persistent named volume
     healthcheck:
@@ -27,6 +27,7 @@ services:
   # 2. Backend REST API (Python Flask)
   # ==========================================
   backend:
+    image: ${DOCKER_HUB_USER:-davidstraka29}/qr-backend:latest
     build:
       context: ./src/backend
       dockerfile: Dockerfile
@@ -53,6 +54,7 @@ services:
   # 3. Frontend & API Gateway (Vue 3 + Nginx)
   # ==========================================
   frontend:
+    image: ${DOCKER_HUB_USER:-davidstraka29}/qr-frontend:latest
     build:
       context: ./src/frontend
       dockerfile: Dockerfile
